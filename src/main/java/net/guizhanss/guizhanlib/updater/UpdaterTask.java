@@ -1,5 +1,13 @@
 package net.guizhanss.guizhanlib.updater;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import net.guizhanss.guizhanlib.utils.JsonUtil;
+import org.bukkit.plugin.Plugin;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -16,24 +24,13 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
-import org.bukkit.plugin.Plugin;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-
-import net.guizhanss.guizhanlib.utils.JsonUtil;
-
 /**
  * 自动更新任务
  * 由 {@link GuizhanBuildsUpdater} 调用
  *
  * @author ybw0014
  */
-public class UpdaterTask implements Runnable {
+public final class UpdaterTask implements Runnable {
 
     private final GuizhanBuildsUpdater updater;
     private final Plugin plugin;
@@ -57,11 +54,11 @@ public class UpdaterTask implements Runnable {
 
         String format = getVersionFormat();
         if (format == null) {
-            logger.log(Level.SEVERE, "无法获取版本格式信息，可能是自动更新模块没有配置正确");
+            logger.log(Level.SEVERE, updater.getFromLocale("invalid_version_format", "Cannot get version format. Maybe the developer did not configure the updater correctly?"));
             return;
         }
         if (!checkVersion(format)) {
-            logger.log(Level.WARNING, "你使用的不是从构建站下载的版本，自动更新已禁用");
+            logger.log(Level.WARNING, updater.getFromLocale("invalid_version", "You are using an unofficial version, which is not downloaded from Guizhan Builds. The updater has stopped."));
             return;
         }
         if (checkUpdate()) {
@@ -94,7 +91,7 @@ public class UpdaterTask implements Runnable {
             }
 
             if (repoInfo == null) {
-                throw new IllegalArgumentException("无法找到仓库信息");
+                throw new IllegalArgumentException(updater.getFromLocale("cannot_find_repo", "Cannot find repo in Guizhan Builds."));
             }
 
             this.repoInfo = (JsonObject) repoInfo;
@@ -111,30 +108,30 @@ public class UpdaterTask implements Runnable {
                     updater.getBranch()
                 );
             }
-        } catch (MalformedURLException ex) {
-            logger.log(Level.SEVERE, "构建站URL地址错误，无法获取仓库配置信息");
-        } catch (IllegalStateException ex) {
-            logger.log(Level.SEVERE, "构建站配置错误，无法获取仓库配置信息", ex);
+        } catch (MalformedURLException | IllegalStateException ex) {
+            logger.log(Level.SEVERE, updater.getFromLocale("cannot_find_repo", "Cannot find repo in Guizhan Builds."), ex);
         } catch (IllegalArgumentException ex) {
-            logger.log(Level.SEVERE, "无法获取仓库配置信息", ex);
+            ex.printStackTrace();
         }
     }
 
     /**
      * 从构建站获取版本格式
+     *
      * @return 版本格式，null表示获取失败
      */
-    private @Nullable String getVersionFormat() {
+    @Nullable
+    private String getVersionFormat() {
         try {
             return JsonUtil.getFromPath(repoInfo, "options.target.version").getAsString();
         } catch (IllegalStateException ex) {
-            logger.log(Level.SEVERE, "构建站配置错误，无法获取版本格式信息", ex);
             return null;
         }
     }
 
     /**
      * 检查插件版本是否与构建站版本格式一致
+     *
      * @param format 从构建站获取的版本格式
      * @return 格式是否一致
      */
@@ -150,6 +147,7 @@ public class UpdaterTask implements Runnable {
 
     /**
      * 检查是否有新版本
+     *
      * @return 是否有新版本
      */
     private boolean checkUpdate() {
@@ -160,29 +158,26 @@ public class UpdaterTask implements Runnable {
             JsonArray builds = (JsonArray) JsonUtil.getFromPath(buildsJson, "builds");
 
             JsonObject build = null;
-            for (int i = builds.size() - 1; i >= 0 ; i --) {
+            for (int i = builds.size() - 1; i >= 0; i--) {
                 build = (JsonObject) builds.get(i);
                 if (build.get("success").getAsBoolean()) break;
                 build = null;
             }
             if (build == null) {
-                logger.log(Level.SEVERE, "构建站没有成功的构建，已禁用自动更新");
+                logger.log(Level.SEVERE, updater.getFromLocale("no_successful_builds", "There is no successful build in Guizhan Builds. How did you do this?"));
                 return false;
             }
 
             String pluginName = JsonUtil.getFromPath(this.repoInfo, "options.target.name").getAsString();
             boolean needUpdate = !MessageFormat.format("{0}-{1}.jar", pluginName, plugin.getDescription().getVersion()).equals(build.get("target").getAsString());
             if (!needUpdate) {
-                logger.log(Level.INFO, "{0} 已是最新版本，无需更新", plugin.getName());
+                logger.log(Level.INFO, updater.getFromLocale("latest", "{0} is up-to-date."), plugin.getName());
                 return false;
             }
             updateInfo = build;
             return true;
-        } catch (MalformedURLException ex) {
-            logger.log(Level.SEVERE, "构建站URL地址错误，无法获取所有构建信息");
-            return false;
-        } catch (NullPointerException ex) {
-            logger.log(Level.SEVERE, "检查更新时出现错误");
+        } catch (MalformedURLException | NullPointerException ex) {
+            logger.log(Level.SEVERE, updater.getFromLocale("an_error_has_occurred", "An error has occurred while checking for update"));
             return false;
         }
     }
@@ -192,8 +187,8 @@ public class UpdaterTask implements Runnable {
      */
     private void update() {
         String targetFilename = updateInfo.get("target").getAsString();
-        logger.log(Level.INFO, "{0} 需要进行更新", plugin.getName());
-        logger.log(Level.INFO, () -> MessageFormat.format("正在下载 {0} #{1}", plugin.getName(), updateInfo.get("id").getAsString()));
+        logger.log(Level.INFO, updater.getFromLocale("need_update", "An error has occurred while checking for update"), plugin.getName());
+        logger.log(Level.INFO, () -> MessageFormat.format(updater.getFromLocale("downloading", "Downloading {0} - Build {1}"), plugin.getName(), updateInfo.get("id").getAsString()));
 
         try {
             BufferedInputStream input = new BufferedInputStream(new URL(updater.getTargetUrl(workingDirectory, targetFilename)).openStream());
@@ -205,23 +200,25 @@ public class UpdaterTask implements Runnable {
                 output.write(data, 0, read);
             }
         } catch (Exception ex) {
-            plugin.getLogger().log(Level.SEVERE, ex, () -> "更新" + plugin.getName() + "失败");
+            logger.log(Level.SEVERE, ex, () -> MessageFormat.format(updater.getFromLocale("update_fail", "Failed to update {0}"), plugin.getName()));
             return;
         }
 
-        plugin.getLogger().log(Level.INFO, " ");
-        plugin.getLogger().log(Level.INFO, "============== 自动更新 ==============");
-        plugin.getLogger().log(Level.INFO, () -> MessageFormat.format("已更新 {0} 至 #{1}", plugin.getName(), updateInfo.get("id").getAsString()));
-        plugin.getLogger().log(Level.INFO, "重启服务器以安装新版本");
-        plugin.getLogger().log(Level.INFO, " ");
+        logger.log(Level.INFO, " ");
+        logger.log(Level.INFO, updater.getFromLocale("info_auto_update", "============== Auto update =============="));
+        logger.log(Level.INFO, () -> MessageFormat.format(updater.getFromLocale("info_auto_update_1", "Downloaded {0} Build {1}"), plugin.getName(), updateInfo.get("id").getAsString()));
+        logger.log(Level.INFO, updater.getFromLocale("info_auto_update_2", "Restart server to update"));
+        logger.log(Level.INFO, " ");
     }
 
     /**
      * 从URL获取所有内容
+     *
      * @param url 资源所在的 {@link URL}
      * @return 所有内容 {@link String}
      */
-    private @Nullable String fetch(@Nonnull URL url) {
+    @Nullable
+    private String fetch(@Nonnull URL url) {
         try {
             StringBuilder content = new StringBuilder();
 
@@ -240,7 +237,7 @@ public class UpdaterTask implements Runnable {
 
             return content.toString();
         } catch (IOException | NullPointerException ex) {
-            logger.log(Level.WARNING, "无法从构建站获取更新信息", ex);
+            logger.log(Level.WARNING, updater.getFromLocale("cannot_fetch_info", "Cannot fetch info from Guizhan Builds"), ex);
             return null;
         }
     }

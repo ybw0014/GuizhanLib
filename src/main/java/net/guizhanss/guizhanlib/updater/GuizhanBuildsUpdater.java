@@ -1,31 +1,35 @@
 package net.guizhanss.guizhanlib.updater;
 
+import com.google.common.base.Preconditions;
+import com.google.gson.JsonObject;
 import lombok.Getter;
+import net.guizhanss.guizhanlib.utils.JsonUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 
 import javax.annotation.Nonnull;
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.text.MessageFormat;
 import java.util.logging.Logger;
 
 /**
  * 自动更新，从构建站(builds.guizhanss.net)获取最新版本
  */
-public class GuizhanBuildsUpdater {
+@Getter
+public final class GuizhanBuildsUpdater {
 
-    @Getter
     private final Plugin plugin;
-    @Getter
     private final File file;
-    @Getter
     private final String user;
-    @Getter
     private final String repo;
-    @Getter
     private final String branch;
     private final boolean checkOnly;
+    private String lang;
+    private JsonObject locale;
 
     /**
      * 初始化
@@ -37,14 +41,30 @@ public class GuizhanBuildsUpdater {
      */
     @ParametersAreNonnullByDefault
     public GuizhanBuildsUpdater(Plugin plugin, File file, String user, String repo, String branch, boolean checkOnly) {
+        this(plugin, file, user, repo, branch, checkOnly, "zh-CN");
+    }
+
+    /**
+     * 初始化 (包含语言)
+     *
+     * @param user      用户
+     * @param repo      仓库
+     * @param branch    分支
+     * @param checkOnly 是否仅检查而不下载更新
+     * @param lang      设置自动更新模块语言
+     */
+    @ParametersAreNonnullByDefault
+    public GuizhanBuildsUpdater(Plugin plugin, File file, String user, String repo, String branch, boolean checkOnly, String lang) {
         this.plugin = plugin;
         this.file = file;
         this.user = user;
         this.repo = repo;
         this.branch = branch;
         this.checkOnly = checkOnly;
+        this.lang = lang;
 
         prepareUpdateFolder();
+        loadLang();
     }
 
     /**
@@ -70,8 +90,8 @@ public class GuizhanBuildsUpdater {
      *
      * @return 仓库列表地址
      */
-    public @Nonnull
-    String getReposFileURL() {
+    @Nonnull
+    public String getReposFileURL() {
         return "https://builds.guizhanss.net/repos.json";
     }
 
@@ -80,8 +100,8 @@ public class GuizhanBuildsUpdater {
      *
      * @return 键名
      */
-    public @Nonnull
-    String getRepoKey() {
+    @Nonnull
+    public String getRepoKey() {
         return MessageFormat.format("{0}/{1}:{2}", user, repo, branch);
     }
 
@@ -91,8 +111,8 @@ public class GuizhanBuildsUpdater {
      * @param directory 工作目录
      * @return 构建信息地址
      */
-    public @Nonnull
-    String getVersions(@Nonnull String directory) {
+    @Nonnull
+    public String getVersions(@Nonnull String directory) {
         return MessageFormat.format("https://builds.guizhanss.net/f/{0}/builds.json", directory);
     }
 
@@ -101,8 +121,8 @@ public class GuizhanBuildsUpdater {
      *
      * @return 日志组件
      */
-    public @Nonnull
-    Logger getLogger() {
+    @Nonnull
+    public Logger getLogger() {
         return plugin.getLogger();
     }
 
@@ -114,8 +134,8 @@ public class GuizhanBuildsUpdater {
      * @return 构建文件URL
      */
     @ParametersAreNonnullByDefault
-    public @Nonnull
-    String getTargetUrl(String directory, String target) {
+    @Nonnull
+    public String getTargetUrl(String directory, String target) {
         return MessageFormat.format("https://builds.guizhanss.net/f/{0}/{1}", directory, target);
     }
 
@@ -126,5 +146,40 @@ public class GuizhanBuildsUpdater {
      */
     private void scheduleAsyncUpdateTask(@Nonnull UpdaterTask task) {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, task);
+    }
+
+    /**
+     * 加载更新模块语言文件
+     */
+    private void loadLang() {
+        // 从资源中加载
+        InputStream stream = plugin.getResource("updater.json");
+        if (stream == null) {
+            throw new IllegalStateException("The updater's language file is missing, did you correctly relocated it?");
+        }
+        BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+        JsonObject langRoot = (JsonObject) JsonUtil.parse(reader);
+
+        if (JsonUtil.getFromPath(langRoot, lang) != null) {
+            lang = "en";
+            langRoot = (JsonObject) JsonUtil.getFromPath(langRoot, lang);
+        }
+
+        // 加载
+        this.locale = langRoot;
+    }
+
+    @Nonnull
+    public String getFromLocale(@Nonnull String key, @Nonnull String defaultString) {
+        Preconditions.checkNotNull(key, "language key should not be null");
+        Preconditions.checkNotNull(defaultString, "default string should not be null");
+
+        try {
+            if (this.locale != null) {
+                return this.locale.get(key).getAsString();
+            }
+        } catch (NullPointerException ignored) {
+        }
+        return defaultString;
     }
 }

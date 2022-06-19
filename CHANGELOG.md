@@ -1,4 +1,39 @@
-# 更新日志
+# Changelog
+
+## 0.9.8
+
+- 为`AbstractAddon`添加了可传递`Throwable`的`log`方法
+- 不再调用`AbstractAddon#setupMetrics()`方法
+
+## 0.9.7
+
+- 修复`WikiSetup#setupItem(SlimefunItem, String)`错误调用静态方法的问题
+
+## 0.9.6
+
+- 添加`WikiSetup`类，用于设置物品Wiki页面（兼容旧版本粘液）
+
+## 0.9.5
+
+- `AbstractAddon`添加了`getSlimefunTickCount()`方法，获取已经过的粘液刻数
+
+## 0.9.4
+
+- 向`RandomUtil`添加了`randomDouble`获取随机小数
+
+## 0.9.3
+
+- 更新了`MinecraftTag`，现在包含更多的分类了
+
+## 0.9.2
+
+- 调整`AbstractAddon#setupMetrics()`调用顺序，现在将在启用插件后调用该方法
+
+## 0.9.1
+
+- 小重构更新模块`GuizhanBuildsUpdater`，支持修改显示语言
+- 小重构`AbstractAddon`，支持修改自动更新显示语言（从配置文件读取）
+- 将`Localization`的输出信息全部改为英文
 
 ## 0.9.0
 

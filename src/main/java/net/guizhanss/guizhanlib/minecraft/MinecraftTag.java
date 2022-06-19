@@ -5,7 +5,12 @@ import org.bukkit.inventory.ItemStack;
 
 /**
  * This enum contains some useful tags that
- * {@link org.bukkit.Tag} does not have
+ * {@link org.bukkit.Tag} does not have.
+ * <p>
+ * TODO: rewrite it to have multi-version compatibility
+ *
+ * @author ybw0014
+ * @author haiman233
  */
 public enum MinecraftTag {
     /**
@@ -19,7 +24,8 @@ public enum MinecraftTag {
                 || type == Material.IRON_HELMET
                 || type == Material.GOLDEN_HELMET
                 || type == Material.DIAMOND_HELMET
-                || type == Material.NETHERITE_HELMET;
+                || type == Material.NETHERITE_HELMET
+                || type == Material.TURTLE_HELMET;
         }
     },
 
@@ -34,7 +40,8 @@ public enum MinecraftTag {
                 || type == Material.IRON_CHESTPLATE
                 || type == Material.GOLDEN_CHESTPLATE
                 || type == Material.DIAMOND_CHESTPLATE
-                || type == Material.NETHERITE_CHESTPLATE;
+                || type == Material.NETHERITE_CHESTPLATE
+                || type == Material.ELYTRA;
         }
     },
 
@@ -157,6 +164,58 @@ public enum MinecraftTag {
     },
 
     /**
+     * This includes all types of skull
+     */
+    SKULL {
+        @Override
+        public boolean isTagged(Material type) {
+            return type == Material.SKELETON_SKULL
+                || type == Material.WITHER_SKELETON_SKULL
+                || type == Material.ZOMBIE_HEAD
+                || type == Material.PLAYER_HEAD
+                || type == Material.CREEPER_HEAD
+                || type == Material.DRAGON_HEAD
+                || type == Material.CARVED_PUMPKIN;
+        }
+    },
+
+    /**
+     * This includes all types of horse armor
+     */
+    HORSE_ARMOR {
+        @Override
+        public boolean isTagged(Material type) {
+            return type == Material.LEATHER_HORSE_ARMOR
+                || type == Material.IRON_HORSE_ARMOR
+                || type == Material.GOLDEN_HORSE_ARMOR
+                || type == Material.DIAMOND_HORSE_ARMOR;
+        }
+    },
+
+    /**
+     * This includes all types of bow
+     */
+    BOW {
+        @Override
+        public boolean isTagged(Material type) {
+            return type == Material.BOW
+                || type == Material.CROSSBOW;
+        }
+    },
+
+    /**
+     * This includes all types of fishing rod
+     */
+    FISHING_ROD {
+        @Override
+        public boolean isTagged(Material type) {
+            return type == Material.FISHING_ROD
+                || type == Material.CARROT_ON_A_STICK
+                || type == Material.WARPED_FUNGUS_ON_A_STICK;
+        }
+    },
+
+    /**
      * This includes all types of potions
      */
     POTION {
@@ -183,7 +242,6 @@ public enum MinecraftTag {
      * This method returns if given {@link Material} is tagged.
      *
      * @param type the {@link Material} to be determined
-     *
      * @return if given {@link Material} is tagged
      */
     public abstract boolean isTagged(Material type);
@@ -192,7 +250,6 @@ public enum MinecraftTag {
      * This method returns if given {@link ItemStack} is tagged.
      *
      * @param itemStack the {@link ItemStack} to be determined
-     *
      * @return if given {@link ItemStack} is tagged
      */
     public boolean isTagged(ItemStack itemStack) {
