@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-java@v3.3.0
         with:
           distribution: adopt
-          java-version: '8'
+          java-version: '16'
           cache: 'maven'
 
       - run: mvn package --file pom.xml

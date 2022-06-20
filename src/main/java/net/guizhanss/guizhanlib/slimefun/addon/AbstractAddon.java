@@ -3,7 +3,6 @@ package net.guizhanss.guizhanlib.slimefun.addon;
 import com.google.common.base.Preconditions;
 import io.github.thebusybiscuit.slimefun4.api.SlimefunAddon;
 import io.github.thebusybiscuit.slimefun4.implementation.Slimefun;
-import net.guizhanss.guizhanlib.common.Scheduler;
 import net.guizhanss.guizhanlib.updater.GuizhanBuildsUpdater;
 import net.guizhanss.guizhanlib.utils.ChatUtil;
 import org.bstats.bukkit.Metrics;
@@ -51,6 +50,7 @@ public abstract class AbstractAddon extends JavaPlugin implements SlimefunAddon 
     private int metricsId;
     private int slimefunTickCount;
     private Metrics metrics;
+    private Scheduler scheduler;
     private boolean loading;
     private boolean enabling;
     private boolean disabling;
@@ -155,6 +155,11 @@ public abstract class AbstractAddon extends JavaPlugin implements SlimefunAddon 
     @Nonnull
     public static AddonConfig getAddonConfig() {
         return getInstance().config;
+    }
+
+    @Nonnull
+    public static Scheduler getScheduler() {
+        return getInstance().scheduler;
     }
 
     /**
@@ -331,8 +336,13 @@ public abstract class AbstractAddon extends JavaPlugin implements SlimefunAddon 
             }
         }
 
+        // Setup Scheduler
+        scheduler = new Scheduler(this);
+
         // Create total tick count
-        Scheduler.repeat(Slimefun.getTickerTask().getTickRate(), () -> slimefunTickCount++);
+        if (environment == Environment.LIVE) {
+            scheduler.repeat(Slimefun.getTickerTask().getTickRate(), () -> slimefunTickCount++);
+        }
 
         // Setup metrics
         if (metricsId != 0) {
@@ -396,11 +406,8 @@ public abstract class AbstractAddon extends JavaPlugin implements SlimefunAddon 
      */
     private void handleException(RuntimeException ex) {
         switch (environment) {
-            case LIVE:
-                ex.printStackTrace();
-                break;
-            case TESTING:
-                throw ex;
+            case LIVE -> ex.printStackTrace();
+            case TESTING -> throw ex;
         }
     }
 
@@ -415,20 +422,6 @@ public abstract class AbstractAddon extends JavaPlugin implements SlimefunAddon 
             throw new IllegalStateException("You should call #enableMetrics(int) in constructor!");
         }
         metricsId = pluginId;
-    }
-
-    /**
-     * DEPRECATED: Call {@link #getMetrics()} to get {@link Metrics} instance.
-     * <p>
-     * Will NOT be called any more.
-     * <p>
-     * Set up metrics module. If you need this, override it
-     * e.g. Custom charts, etc...
-     *
-     * @param metrics The {@link Metrics} instance.
-     */
-    @Deprecated
-    public void setupMetrics(@Nonnull Metrics metrics) {
     }
 
     /**

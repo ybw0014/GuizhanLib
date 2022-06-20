@@ -28,6 +28,7 @@ public final class PotionEffectTypeHelper {
 
     /**
      * 获取药水效果({@link PotionEffectType}的键名
+     * TODO: 1.19 可直接获取NamespacedKey
      *
      * @param type {@link PotionEffectType} 药水效果
      * @return 药水效果的键名

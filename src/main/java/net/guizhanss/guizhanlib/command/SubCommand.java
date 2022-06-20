@@ -1,24 +1,74 @@
 package net.guizhanss.guizhanlib.command;
 
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
+import com.google.common.base.Preconditions;
+import lombok.Getter;
 import org.bukkit.command.CommandSender;
-import org.bukkit.plugin.Plugin;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.List;
+import java.util.function.Predicate;
 
-public class SubCommand implements CommandExecutor {
-    private final Plugin plugin;
-    private final Command command;
+/**
+ * A sub command.
+ *
+ * @author ybw0014
+ */
+@ParametersAreNonnullByDefault
+@SuppressWarnings("ConstantConditions")
+public abstract class SubCommand {
 
-    public SubCommand(Plugin plugin, Command command) {
-        this.plugin = plugin;
-        this.command = command;
+    private final Predicate<CommandSender> permission;
+    @Getter
+    private final String name;
+    @Getter
+    private final String description;
+
+    @Getter
+    private ParentCommand parent;
+
+    protected SubCommand(String name, String description, boolean isOp) {
+        Preconditions.checkArgument(name != null, "name cannot be null");
+        Preconditions.checkArgument(description != null, "description cannot be null");
+
+        this.name = name;
+        this.description = description;
+        this.permission = isOp ? CommandSender::isOp : sender -> true;
     }
 
-    @ParametersAreNonnullByDefault
+    protected SubCommand(String name, String description, String permission) {
+        Preconditions.checkArgument(name != null, "name cannot be null");
+        Preconditions.checkArgument(description != null, "description cannot be null");
+
+        this.name = name;
+        this.description = description;
+        this.permission = sender -> sender.hasPermission(permission);
+    }
+
+    protected SubCommand(String name, String description) {
+        this(name, description, false);
+    }
+
+    protected void setParent(ParentCommand parent) {
+        Preconditions.checkArgument(parent != null, "parent command cannot be null");
+        this.parent = parent;
+    }
+
+    protected boolean checkPermission(CommandSender sender) {
+        Preconditions.checkArgument(sender != null, "command sender cannot be null");
+        return permission.test(sender);
+    }
+
+    protected abstract void execute(CommandSender sender, String[] args);
+
+    protected abstract void complete(CommandSender sender, String[] args, List<String> completions);
+
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        return false;
+    public int hashCode() {
+        return name.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof SubCommand && ((SubCommand) obj).name.equals(name);
     }
 }
