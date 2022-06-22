@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.function.Predicate;
 
 /**
- * A sub command.
+ * A {@link SubCommand}.
  *
  * @author ybw0014
  */
@@ -17,12 +17,12 @@ import java.util.function.Predicate;
 @SuppressWarnings("ConstantConditions")
 public abstract class SubCommand {
 
-    private final Predicate<CommandSender> permission;
     @Getter
     private final String name;
     @Getter
     private final String description;
 
+    private Predicate<CommandSender> permission;
     @Getter
     private ParentCommand parent;
 
@@ -44,6 +44,16 @@ public abstract class SubCommand {
         this.permission = sender -> sender.hasPermission(permission);
     }
 
+    protected SubCommand(String name, String description, Predicate<CommandSender> permission) {
+        Preconditions.checkArgument(name != null, "name cannot be null");
+        Preconditions.checkArgument(description != null, "description cannot be null");
+        Preconditions.checkArgument(permission != null, "permission cannot be null");
+
+        this.name = name;
+        this.description = description;
+        this.permission = permission;
+    }
+
     protected SubCommand(String name, String description) {
         this(name, description, false);
     }
@@ -51,6 +61,14 @@ public abstract class SubCommand {
     protected void setParent(ParentCommand parent) {
         Preconditions.checkArgument(parent != null, "parent command cannot be null");
         this.parent = parent;
+    }
+
+    protected void setPermission(boolean isOp) {
+        this.permission = isOp ? CommandSender::isOp : sender -> true;
+    }
+
+    protected void setPermission(String permission) {
+        this.permission = sender -> sender.hasPermission(permission);
     }
 
     protected boolean checkPermission(CommandSender sender) {
